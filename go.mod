@@ -1,3 +1,3 @@
-module github.com/nbareil/mispgo
+module github.com/lubiedo/mispgo
 
 go 1.12

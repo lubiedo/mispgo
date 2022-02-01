@@ -2,6 +2,7 @@ package misp
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -295,12 +296,12 @@ func (client *Client) DownloadSample(sampleID int, filename string) error {
 
 // Get is a wrapper to Do()
 func (client *Client) Get(path string, req interface{}) (*http.Response, error) {
-	return client.Do("GET", path, req)
+	return client.Do("GET", path, req, true)
 }
 
 // Post is a wrapper to Do()
 func (client *Client) Post(path string, req interface{}) (*http.Response, error) {
-	return client.Do("POST", path, req)
+	return client.Do("POST", path, req, true)
 }
 
 type attributeResponse struct {
@@ -356,8 +357,11 @@ func (client *Client) SearchAttribute(q *AttributeQuery) ([]Attribute, error) {
 // server.
 // It checks the HTTP response by looking at the status code and decodes the JSON structure
 // to a Response structure.
-func (client *Client) Do(method, path string, req interface{}) (*http.Response, error) {
+func (client *Client) Do(method, path string, req interface{}, verifyCert bool) (*http.Response, error) {
 	httpReq := &http.Request{}
+	httpTrp := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: !verifyCert},
+	}
 
 	if req != nil {
 		jsonBuf, err := json.Marshal(req)
@@ -376,7 +380,9 @@ func (client *Client) Do(method, path string, req interface{}) (*http.Response, 
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Accept", "application/json")
 
-	httpClient := http.Client{}
+	httpClient := http.Client{
+		Transport: httpTrp,
+	}
 	resp, err := httpClient.Do(httpReq)
 	if err != nil {
 		return nil, err
