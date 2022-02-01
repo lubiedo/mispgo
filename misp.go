@@ -15,8 +15,9 @@ import (
 
 // Client ... XXX
 type Client struct {
-	BaseURL *url.URL
-	APIKey  string
+	BaseURL    *url.URL
+	APIKey     string
+	VerifyCert bool
 }
 
 // Sighting ... XXX
@@ -177,6 +178,15 @@ type eventTagResponse struct {
 	CheckPublish bool   `json:"check_publish"`
 }
 
+func NewClient(baseURL string, apiKey string) (Client, error) {
+	url, err := url.Parse(baseURL)
+	return Client{
+		BaseURL:    url,
+		APIKey:     apiKey,
+		VerifyCert: true,
+	}, err
+}
+
 func (client *Client) eventTagManagement(path string, eventID string, tag string) (bool, error) {
 	req := Request{
 		Request: EventTag{
@@ -296,12 +306,12 @@ func (client *Client) DownloadSample(sampleID int, filename string) error {
 
 // Get is a wrapper to Do()
 func (client *Client) Get(path string, req interface{}) (*http.Response, error) {
-	return client.Do("GET", path, req, true)
+	return client.Do("GET", path, req)
 }
 
 // Post is a wrapper to Do()
 func (client *Client) Post(path string, req interface{}) (*http.Response, error) {
-	return client.Do("POST", path, req, true)
+	return client.Do("POST", path, req)
 }
 
 type attributeResponse struct {
@@ -357,10 +367,10 @@ func (client *Client) SearchAttribute(q *AttributeQuery) ([]Attribute, error) {
 // server.
 // It checks the HTTP response by looking at the status code and decodes the JSON structure
 // to a Response structure.
-func (client *Client) Do(method, path string, req interface{}, verifyCert bool) (*http.Response, error) {
+func (client *Client) Do(method, path string, req interface{}) (*http.Response, error) {
 	httpReq := &http.Request{}
 	httpTrp := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: !verifyCert},
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: !client.VerifyCert},
 	}
 
 	if req != nil {

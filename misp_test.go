@@ -28,6 +28,7 @@ func setup() {
 	client = &Client{}
 	client.BaseURL, _ = url.Parse(server.URL)
 	client.APIKey = "dummyapikeyfortests"
+	client.VerifyCert = true
 }
 
 // shamely stolen from go-github/github/github_test.go
