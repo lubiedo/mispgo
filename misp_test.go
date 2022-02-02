@@ -49,8 +49,52 @@ func testAuthentication(t *testing.T, r *http.Request) {
 	testHeader(t, r, "Authorization", client.APIKey)
 }
 
-type attributeRequest struct {
-	Request AttributeQuery
+func Test_GetEvents(t *testing.T) {
+	setup()
+	mux.HandleFunc("/events",
+		func(w http.ResponseWriter, r *http.Request) {
+			testMethod(t, r, "GET")
+
+			fmt.Fprint(w, `[{"id":"1","org_id":"1","date":"1996-02-02","info":"test","uuid":"4ea903e6-2d47-4a7f-8721-fd379a200cd7","published":false,"analysis":"0","attribute_count":"0","orgc_id":"1","timestamp":"1643760770","distribution":"1","sharing_group_id":"0","proposal_email_lock":false,"locked":false,"threat_level_id":"1","publish_timestamp":"0","sighting_timestamp":"0","disable_correlation":false,"extends_uuid":"","Org":{"id":"1","name":"ORGNAME","uuid":"fadeabab-a043-44bc-ad7e-f86f7742d6b0"},"Orgc":{"id":"1","name":"ORGNAME","uuid":"fadeabab-a043-44bc-ad7e-f86f7742d6b0"},"EventTag":[]}]`)
+		})
+
+	_, err := client.GetEvents()
+	if err != nil {
+		t.Errorf("GetEvents() failed: %v", err)
+	}
+}
+
+func Test_SearchEvents(t *testing.T) {
+	setup()
+	mux.HandleFunc("/events/restSearch",
+		func(w http.ResponseWriter, r *http.Request) {
+			testMethod(t, r, "POST")
+			fmt.Fprint(w, `{"response": [{"Event":{"id":"1","orgc_id":"1","org_id":"1","date":"1996-02-02","threat_level_id":"1","info":"test","published":false,"uuid":"4ea903e6-2d47-4a7f-8721-fd379a200cd7","attribute_count":"0","analysis":"0","timestamp":"1643760770","distribution":"1","proposal_email_lock":false,"locked":false,"publish_timestamp":"0","sharing_group_id":"0","disable_correlation":false,"extends_uuid":"","event_creator_email":"admin@admin.test","Org":{"id":"1","name":"ORGNAME","uuid":"fadeabab-a043-44bc-ad7e-f86f7742d6b0","local":true},"Orgc":{"id":"1","name":"ORGNAME","uuid":"fadeabab-a043-44bc-ad7e-f86f7742d6b0","local":true},"Attribute":[],"ShadowAttribute":[],"RelatedEvent":[],"Galaxy":[],"Object":[],"EventReport":[]}}]}
+`)
+		})
+
+	search := &Search{
+		EventID: "1",
+	}
+	_, err := client.SearchEvents(search)
+	if err != nil {
+		t.Errorf("SearchEvents() failed: %v", err)
+	}
+}
+
+func Test_EventExists(t *testing.T) {
+	setup()
+	mux.HandleFunc("/events/view/1",
+		func(w http.ResponseWriter, r *http.Request) {
+			testMethod(t, r, "GET")
+
+			fmt.Fprint(w, `{"Event":{"id":"1","orgc_id":"1","org_id":"1","date":"1996-02-02","threat_level_id":"1","info":"test","published":false,"uuid":"4ea903e6-2d47-4a7f-8721-fd379a200cd7","attribute_count":"0","analysis":"0","timestamp":"1643760770","distribution":"1","proposal_email_lock":false,"locked":false,"publish_timestamp":"0","sharing_group_id":"0","disable_correlation":false,"extends_uuid":"","event_creator_email":"admin@admin.test","Org":{"id":"1","name":"ORGNAME","uuid":"fadeabab-a043-44bc-ad7e-f86f7742d6b0","local":true},"Orgc":{"id":"1","name":"ORGNAME","uuid":"fadeabab-a043-44bc-ad7e-f86f7742d6b0","local":true},"Attribute":[],"ShadowAttribute":[],"RelatedEvent":[],"Galaxy":[],"Object":[],"EventReport":[]}}`)
+		})
+
+	_, err := client.EventExists("1")
+	if err != nil {
+		t.Errorf("EventExists() failed: %v", err)
+	}
 }
 
 func Test_AddSightingNotFound(t *testing.T) {
@@ -91,45 +135,41 @@ func Test_AddSighting(t *testing.T) {
 
 }
 
-func Test_SearchAttribute_NoResult(t *testing.T) {
+// func Test_SearchAttribute_NoResult(t *testing.T) {
+// 	setup()
+//
+// 	attrReq := &AttributeQuery{Value: "68b329da9893e34099c7d8ad5cb9c940"}
+// 	mux.HandleFunc("/attributes/restSearch/json/",
+// 		func(w http.ResponseWriter, r *http.Request) {
+// 			fmt.Fprint(w, `{"response":[]}`)
+// 		})
+//
+// 	_, err := client.SearchAttribute(attrReq)
+// 	if err != nil {
+// 		t.Errorf("SearchAttribute returned error: %v", err)
+// 	}
+// }
+
+func Test_SearchAttributes(t *testing.T) {
 	setup()
 
-	attrReq := &AttributeQuery{Value: "68b329da9893e34099c7d8ad5cb9c940"}
-	mux.HandleFunc("/attributes/restSearch/json/",
-		func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprint(w, `{"response":[]}`)
-		})
-
-	_, err := client.SearchAttribute(attrReq)
-	if err != nil {
-		t.Errorf("SearchAttribute returned error: %v", err)
-	}
-}
-
-func Test_SearchAttribute(t *testing.T) {
-	setup()
-
-	attrReq := &AttributeQuery{Value: "68b329da9893e34099c7d8ad5cb9c940"}
-	want := attributeRequest{Request: *attrReq}
-
-	mux.HandleFunc("/attributes/restSearch/json/",
+	mux.HandleFunc("/attributes/restSearch",
 		func(w http.ResponseWriter, r *http.Request) {
 			testMethod(t, r, "POST")
 			d := json.NewDecoder(r.Body)
 
-			var got attributeRequest
+			var got Search
 			if err := d.Decode(&got); err != nil {
 				t.Errorf("Cannot decode json SearchQuery request: %s", err)
-			}
-
-			if !reflect.DeepEqual(want, got) {
-				t.Errorf("SearchAttribute returned %+v, want %+v", got, want)
 			}
 
 			fmt.Fprint(w, `{"response":{"Attribute":[{"id":"610744","event_id":"6871","category":"Payload delivery","type":"filename|md5","to_ids":true,"uuid":"58b98766-73cc-437f-a814-4a9a0a3ac101","timestamp":"1488553830","distribution":"5","comment":"my comment 1","sharing_group_id":"0","deleted":false,"disable_correlation":true,"object_id":"0","object_relation":null,"value":"1.bat|68b329da9893e34099c7d8ad5cb9c940"},{"id":"610783","event_id":"6871","category":"Artifacts dropped","type":"md5","to_ids":true,"uuid":"58b98dc1-b698-4172-b274-4ae30a3ac101","timestamp":"1488557887","distribution":"5","comment":"1.bat","sharing_group_id":"0","deleted":false,"disable_correlation":false,"object_id":"0","object_relation":null,"value":"68b329da9893e34099c7d8ad5cb9c940"}]}}`)
 		})
 
-	matches, err := client.SearchAttribute(attrReq)
+	search := &Search{
+		EventID: "6871",
+	}
+	matches, err := client.SearchAttributes(search)
 	if err != nil {
 		t.Errorf("SearchAttribute returned error: %v", err)
 	}
@@ -171,7 +211,7 @@ func Test_SearchAttribute(t *testing.T) {
 		},
 	}
 
-	if !reflect.DeepEqual(matches, attributesWanted) {
+	if !reflect.DeepEqual(matches.Response["Attribute"], attributesWanted) {
 		t.Errorf("Search results were different than expected: got %v, wanted %v", matches, attributesWanted)
 	}
 

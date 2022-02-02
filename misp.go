@@ -20,149 +20,6 @@ type Client struct {
 	VerifyCert bool
 }
 
-// Sighting ... XXX
-type Sighting struct {
-	ID        string   `json:"id,omitempty"`
-	UUID      string   `json:"uuid,omitempty"`
-	Value     string   `json:"value,omitempty"`
-	Values    []string `json:"values,omitempty"`
-	Timestamp int      `json:"timestamp,omitempty"`
-}
-
-// Request ... XXX
-type Request struct {
-	Request interface{} `json:"request"`
-}
-
-// SampleFile ... XXX
-type SampleFile struct {
-	Filename string `json:"filename,omitempty"`
-	Data     string `json:"data,omitempty"`
-}
-
-// SampleUpload ... XXX
-type SampleUpload struct {
-	Files        []SampleFile `json:"files,omitempty"`
-	Distribution string       `json:"distribution,omitempty"`
-	Comment      string       `json:"comment,omitempty"` // comment field of any attribute created
-	EventID      string       `json:"event_id,omitempty"`
-	ToIDS        bool         `json:"to_ids,omitempty"`
-	Category     string       `json:"category,omitempty"`
-	Info         string       `json:"info,omitempty"` // event info field if no event ID supplied
-}
-
-// XResponse ... XXX
-type XResponse struct {
-	Name    string `json:"name,omitempty"`
-	Message string `json:"message,omitempty"`
-	URL     string `json:"url,omitempty"`
-	Errors  string `json:"errors,omitempty"`
-	ID      int    `json:"id,omitempty"`
-}
-
-// Response is the outer layer of each MISP response
-type Response struct {
-}
-
-type searchOuterResponse struct {
-	// Response can be an empty array or an object
-	Response json.RawMessage `json:"response"`
-}
-
-type searchInnerResponse struct {
-	Attribute []Attribute `json:"Attribute,omitempty"`
-}
-
-// Attribute ...
-type Attribute struct {
-	Comment            string `json:"comment,omitempty"`
-	ID                 string `json:"id,omitempty"`
-	EventID            string `json:"event_id,omitempty"`
-	Distribution       string `json:"distribution,omitempty"`
-	ObjectID           string `json:"object_id,omitempty"`
-	ObjectRelation     string `json:"object_relation,omitempty"`
-	DisableCorrelation bool   `json:"disable_correlation,omitempty"`
-	Deleted            bool   `json:"deleted,omitempty"`
-	Filename           string `json:"filename,omitempty"`
-	Type               string `json:"type,omitempty"`
-	Timestamp          string `json:"timestamp,omitempty"`
-	Value              string `json:"value,omitempty"`
-	SharingGroupID     string `json:"sharing_group_id,omitempty"`
-	Category           string `json:"category,omitempty"`
-	UUID               string `json:"uuid,omitempty"`
-	ToIDS              bool   `json:"to_ids,omitempty"`
-}
-
-// AttributeQuery ...
-type AttributeQuery struct {
-	// Search for the given value in the attributes' value field.
-	Value string `json:"value,omitempty"`
-
-	// The attribute type, any valid MISP attribute type is accepted.
-	Type string `json:"type,omitempty"`
-
-	// The attribute category, any valid MISP attribute category is accepted.
-	Category string `json:"category,omitempty"`
-
-	// Search by the creator organisation by supplying the organisation idenfitier.
-	Org string `json:"org,omitempty"`
-
-	// To include a tag in the results just write its names into this
-	// parameter. To exclude a tag prepend it with a '!'. You can also chain
-	// several tag commands together with the '&&' operator. Please be aware
-	// the colons (:) cannot be used in the tag search. Use semicolons instead
-	// (the search will automatically search for colons instead).
-	Tags string `json:"tags,omitempty"`
-
-	// Events with the date set to a date after the one specified in the from
-	// field (format: 2015-02-15). This filter will use the date of the event.
-	From string `json:"from,omitempty"`
-
-	// Events with the date set to a date before the one specified in the to
-	// field (format: 2015-02-15). This filter will use the date of the event.
-	To string `json:"to,omitempty"`
-
-	// Events published within the last x amount of time, where x can be
-	// defined in days, hours, minutes (for example 5d or 12h or 30m). This
-	// filter will use the published timestamp of the event.
-	Last string `json:"last,omitempty"`
-
-	// The events that should be included / excluded from the search
-	EventID string `json:"eventid,omitempty"`
-
-	// Include the attachments/encrypted samples in the export
-	WithAttachment string `json:"withAttachments,omitempty"`
-
-	// Only fetch the event metadata (event data, tags, relations) and skip the attributes
-	MetaData string `json:"metadata,omitempty"`
-
-	// The returned events must include an attribute with the given UUID, or
-	// alternatively the event's UUID must match the value(s) passed.
-	UUID string `json:"uuid,omitempty"`
-}
-
-// Search ... XXX
-func (client *Client) Search() {
-	// client.Do("/")
-
-}
-
-// PublishEvent ... XXX
-func (client *Client) PublishEvent(eventID string, email bool) (*Response, error) {
-	var path string
-	if email {
-		path = "/events/alert/%s"
-	} else {
-		path = "/events/publish/%s"
-	}
-
-	path = fmt.Sprintf(path, eventID)
-
-	_, err := client.Post(path, nil)
-
-	return nil, err
-}
-
 type InnerEventTag struct {
 	ID  string `json:"id"`
 	Tag string `json:"tag"`
@@ -314,53 +171,25 @@ func (client *Client) Post(path string, req interface{}) (*http.Response, error)
 	return client.Do("POST", path, req)
 }
 
-type attributeResponse struct {
-	Attribute Attribute `json:"Attribute"`
-}
-
 // AddAttribute adds an attribute to an event
-func (client *Client) AddAttribute(eventID string, attr Attribute) (*Attribute, error) {
-	urlPath := fmt.Sprintf("/attributes/add/%s", eventID)
-	resp, err := client.Post(urlPath, attr)
+func (client *Client) AddAttribute(eventID string, attr Attribute) (attribute Attribute, err error) {
+	var (
+		path   string = "/attributes/add/" + eventID
+		result map[string]json.RawMessage
+	)
+
+	resp, err := client.Post(path, attr)
 	if err != nil {
-		return nil, err
+		return
 	}
 	defer resp.Body.Close()
 
-	var attrResp attributeResponse
 	decoder := json.NewDecoder(resp.Body)
-	if err = decoder.Decode(&attrResp); err != nil {
-		return nil, fmt.Errorf("Could not unmarshal response: %s", err)
+	if err = decoder.Decode(&result); err != nil {
+		return attribute, fmt.Errorf("Could not unmarshal response: %s", err)
 	}
-
-	return &attrResp.Attribute, nil
-}
-
-// SearchAttribute ...
-func (client *Client) SearchAttribute(q *AttributeQuery) ([]Attribute, error) {
-	httpResp, err := client.Post("/attributes/restSearch/json/", Request{Request: q})
-	if err != nil {
-		return nil, err
-	}
-
-	var outer searchOuterResponse
-	// tee := io.TeeReader(httpResp.Body, os.Stdout)
-	// decoder := json.NewDecoder(tee)
-	decoder := json.NewDecoder(httpResp.Body)
-	if err = decoder.Decode(&outer); err != nil {
-		return nil, fmt.Errorf("Could not unmarshal response: %s", err)
-	}
-
-	var inner searchInnerResponse
-	if err := json.Unmarshal(outer.Response, &inner); err != nil {
-		var empty []string
-		if err := json.Unmarshal(outer.Response, &empty); err != nil {
-			return nil, fmt.Errorf("Inner structure has unknown format")
-		}
-		return []Attribute{}, nil
-	}
-
-	return inner.Attribute, nil
+	json.Unmarshal(result["Attribute"], &attribute)
+	return
 }
 
 // Do set the HTTP headers, encode the data in the JSON format and send it to the
