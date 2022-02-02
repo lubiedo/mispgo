@@ -32,7 +32,7 @@ type Search struct {
 	Deleted                bool     `json:"deleted"`
 	EventTimestamp         string   `json:"event_timestamp"`
 	ThreatLevelID          string   `json:"threat_level_id"`
-	Eventinfo              string   `json:"eventinfo"`
+	EventInfo              string   `json:"eventinfo"`
 	DecayingModel          string   `json:"decayingModel"`
 	Score                  string   `json:"score"`
 	FirstSeen              string   `json:"first_seen"`
@@ -64,6 +64,32 @@ type Search struct {
 	Date              string `json:"date"`
 	IncludeSightingDB bool   `json:"includeSightingdb"`
 	Tag               string `json:"tag"`
+}
+
+type IndexSearch struct {
+	Page             int      `json:"page"`
+	Limit            int      `json:"limit"`
+	Sort             string   `json:"sort"`
+	Direction        string   `json:"direction"`
+	Minimal          bool     `json:"minimal"`
+	Attribute        string   `json:"attribute"`
+	EventID          string   `json:"eventid"`
+	DateFrom         string   `json:"datefrom"`
+	DateUntil        string   `json:"dateuntil"`
+	Org              string   `json:"org"`
+	EventInfo        string   `json:"eventinfo"`
+	Tag              string   `json:"tag"`
+	Tags             []string `json:"tags"`
+	Distribution     string   `json:"distribution"`
+	SharingGroup     string   `json:"sharinggroup"`
+	Analysis         string   `json:"analysis"`
+	ThreatLevel      string   `json:"threatlevel"`
+	Email            string   `json:"email"`
+	HasProposal      string   `json:"hasproposal"`
+	Timestamp        string   `json:"timestamp"`
+	PublishTimestamp string   `json:"publish_timestamp"`
+	SearchDateFrom   string   `json:"searchDatefrom"`
+	SearchDateUntil  string   `json:"searchDateuntil"`
 }
 
 type SearchEventsResult struct {
@@ -113,5 +139,17 @@ func (client *Client) SearchAttributes(search *Search) (attributes SearchAttribu
 	if data, err := client.Search("attributes", search); err == nil {
 		err = json.Unmarshal(data, &attributes)
 	}
+	return
+}
+
+// Search event metadata shown on the event index page
+func (client *Client) SearchIndex(search *IndexSearch) (result []Event, err error) {
+	res, err := client.Post("/events/index", search)
+	if err != nil {
+		return
+	}
+	defer res.Body.Close()
+	d := json.NewDecoder(res.Body)
+	err = d.Decode(&result)
 	return
 }
