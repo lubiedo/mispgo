@@ -197,6 +197,7 @@ func (client *Client) AddAttribute(eventID string, attr Attribute) (attribute At
 // It checks the HTTP response by looking at the status code and decodes the JSON structure
 // to a Response structure.
 func (client *Client) Do(method, path string, req interface{}) (*http.Response, error) {
+	dataLen := 0
 	httpReq := &http.Request{}
 	httpTrp := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: !client.VerifyCert},
@@ -207,7 +208,9 @@ func (client *Client) Do(method, path string, req interface{}) (*http.Response, 
 		if err != nil {
 			return nil, err
 		}
-		httpReq.Body = ioutil.NopCloser(bytes.NewReader(jsonBuf))
+		reader := bytes.NewReader(jsonBuf)
+		dataLen = reader.Len()
+		httpReq.Body = ioutil.NopCloser(reader)
 	}
 
 	httpReq.Method = method
@@ -217,6 +220,9 @@ func (client *Client) Do(method, path string, req interface{}) (*http.Response, 
 	httpReq.Header = make(http.Header)
 	httpReq.Header.Set("Authorization", client.APIKey)
 	httpReq.Header.Set("Content-Type", "application/json")
+	if dataLen > 0 {
+		httpReq.Header.Set("Content-Length", strconv.Itoa(dataLen))
+	}
 	httpReq.Header.Set("Accept", "application/json")
 
 	httpClient := http.Client{
