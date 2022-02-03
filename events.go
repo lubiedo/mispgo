@@ -3,6 +3,7 @@ package misp
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -81,8 +82,8 @@ func (client *Client) GetEvents() (events []Event, err error) {
 // Get an event from a MISP instance
 func (client *Client) GetEvent(id string, deleted bool, extended bool) (event Event, err error) {
 	var (
-		res      *http.Response
-		tmpevent map[string]Event
+		res    *http.Response
+		result map[string]Event
 	)
 	data := map[string]bool{}
 
@@ -103,8 +104,8 @@ func (client *Client) GetEvent(id string, deleted bool, extended bool) (event Ev
 	}
 
 	d := json.NewDecoder(res.Body)
-	err = d.Decode(&tmpevent)
-	event = tmpevent["Event"]
+	err = d.Decode(&result)
+	event = result["Event"]
 	return
 }
 
@@ -117,17 +118,23 @@ func (client *Client) EventExists(id string) (bool, error) {
 }
 
 // Add a new event on a MISP instance
-func (client *Client) AddEvent(event *Event, metadata bool) (*Response, error) {
-	var path string = "/events/add"
+func (client *Client) AddEvent(event Event, metadata bool) (Event, error) {
+	var (
+		path   string = "/events/add"
+		result map[string]Event
+	)
 
 	if metadata {
 		path = path + "/metadata:1"
 	}
-
-	data := make(map[string]*Event)
-	data["Event"] = event
-	_, err := client.Post(path, data)
-	return nil, err
+	res, err := client.Post(path, event)
+	if err != nil {
+		return Event{}, err
+	}
+	decoder := json.NewDecoder(res.Body)
+	defer res.Body.Close()
+	err = decoder.Decode(&result)
+	return result["Event"], err
 }
 
 // Publish the event with one single HTTP POST
@@ -142,4 +149,12 @@ func (client *Client) PublishEvent(eventID string, email bool) (*Response, error
 	path = fmt.Sprintf(path, eventID)
 	_, err := client.Post(path, nil)
 	return nil, err
+}
+
+func ReadEvent(body io.ReadCloser) (event Event, err error) {
+	decoder := json.NewDecoder(body)
+	defer body.Close()
+
+	err = decoder.Decode(&event)
+	return
 }

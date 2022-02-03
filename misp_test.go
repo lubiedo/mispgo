@@ -285,6 +285,35 @@ func Test_SearchIndex(t *testing.T) {
 	}
 }
 
+func Test_AddEvent(t *testing.T) {
+	setup()
+	mux.HandleFunc("/events/add",
+		func(w http.ResponseWriter, r *http.Request) {
+			testMethod(t, r, "POST")
+
+			var ee Event
+			ee, err := ReadEvent(r.Body)
+			if err != nil {
+				t.Errorf("AddEvent() failed: %v", err)
+			}
+			result := make(map[string]Event)
+			result["Event"] = ee
+
+			d, _ := json.Marshal(result)
+			fmt.Fprint(w, string(d))
+		})
+
+	event := NewEvent()
+	event2, err := client.AddEvent(event, false)
+	if err != nil {
+		t.Errorf("AddEvent() failed: %v", err)
+	}
+
+	if !reflect.DeepEqual(event, event2) {
+		t.Errorf("UploadSample returned %+v, want %+v", event2, event)
+	}
+}
+
 func Test_EventExists(t *testing.T) {
 	setup()
 	mux.HandleFunc("/events/view/1",
