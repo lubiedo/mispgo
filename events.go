@@ -32,24 +32,24 @@ type Event struct {
 	DisableCorrelation bool   `json:"disable_correlation"`
 	ExtendsUUID        string `json:"extends_uuid"`
 	EventCreatorEmail  string `json:"event_creator_email"`
-	Feed               Feed   `json:"Feed"`
+	Feed               Feed   `json:"Feed,omitempty"`
 	Org                struct {
 		ID   string `json:"id"`
 		Name string `json:"name"`
 		UUID string `json:"uuid"`
-	} `json:"Org"`
+	} `json:"Org,omitempty"`
 	Orgc struct {
 		ID   string `json:"id"`
 		Name string `json:"name"`
 		UUID string `json:"uuid"`
-	} `json:"Orgc"`
-	Attribute       []Attribute       `json:"Attribute"`
-	ShadowAttribute []ShadowAttribute `json:"ShadowAttribute"`
-	RelatedEvent    []interface{}     `json:"RelatedEvent"`
-	Galaxy          []Galaxy          `json:"Galaxy"`
-	Object          []Object          `json:"Object"`
-	EventReport     []interface{}     `json:"EventReport"`
-	Tag             []Tag             `json:"Tag"`
+	} `json:"Orgc,omitempty"`
+	Attribute       []Attribute       `json:"Attribute,omitempty"`
+	ShadowAttribute []ShadowAttribute `json:"ShadowAttribute,omitempty"`
+	RelatedEvent    []interface{}     `json:"RelatedEvent,omitempty"`
+	Galaxy          []Galaxy          `json:"Galaxy,omitempty"`
+	Object          []Object          `json:"Object,omitempty"`
+	EventReport     []interface{}     `json:"EventReport,omitempty"`
+	Tag             []Tag             `json:"Tag,omitempty"`
 }
 
 func NewEvent() Event {
@@ -129,8 +129,17 @@ func (client *Client) AddEvent(event Event, metadata bool) (Event, error) {
 		path = path + "/metadata:1"
 	}
 
+	// remove extra elements
 	data, _ = ToMap(event)
-	delete(data, "published")
+	elem := []string{
+		"Feed",
+		"Org",
+		"Orgc",
+		"published",
+	}
+	for _, item := range elem {
+		delete(data, item)
+	}
 
 	res, err := client.Post(path, data)
 	if err != nil {
