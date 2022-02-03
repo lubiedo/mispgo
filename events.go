@@ -118,16 +118,15 @@ func (client *Client) EventExists(id string) (bool, error) {
 
 // Add a new event on a MISP instance
 func (client *Client) AddEvent(event *Event, metadata bool) (*Response, error) {
-	var (
-		path string = "/events/add"
-		data map[string]*Event
-	)
+	var path string = "/events/add"
 
 	if metadata {
 		path = path + "/metadata:1"
 	}
+
+	data := make(map[string]*Event)
 	data["Event"] = event
-	_, err := client.Post(path, event)
+	_, err := client.Post(path, data)
 	return nil, err
 }
 
