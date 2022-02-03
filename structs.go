@@ -1,6 +1,12 @@
 package misp
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"strconv"
+	"time"
+
+	"github.com/google/uuid"
+)
 
 // Sighting ... XXX
 type Sighting struct {
@@ -73,6 +79,14 @@ type Attribute struct {
 	DisableCorrelation bool   `json:"disable_correlation"`
 	FirstSeen          string `json:"first_seen"`
 	LastSeen           string `json:"last_seen"`
+}
+
+func NewAttribute() Attribute {
+	return Attribute{
+		Comment:   "",
+		UUID:      uuid.NewString(),
+		Timestamp: strconv.FormatInt(time.Now().Unix(), 10),
+	}
 }
 
 type ShadowAttribute struct {
