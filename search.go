@@ -67,29 +67,29 @@ type Search struct {
 }
 
 type IndexSearch struct {
-	Page             int      `json:"page"`
-	Limit            int      `json:"limit"`
-	Sort             string   `json:"sort"`
-	Direction        string   `json:"direction"`
-	Minimal          bool     `json:"minimal"`
-	Attribute        string   `json:"attribute"`
-	EventID          string   `json:"eventid"`
-	DateFrom         string   `json:"datefrom"`
-	DateUntil        string   `json:"dateuntil"`
-	Org              string   `json:"org"`
-	EventInfo        string   `json:"eventinfo"`
-	Tag              string   `json:"tag"`
-	Tags             []string `json:"tags"`
-	Distribution     string   `json:"distribution"`
-	SharingGroup     string   `json:"sharinggroup"`
-	Analysis         string   `json:"analysis"`
-	ThreatLevel      string   `json:"threatlevel"`
-	Email            string   `json:"email"`
-	HasProposal      string   `json:"hasproposal"`
-	Timestamp        string   `json:"timestamp"`
-	PublishTimestamp string   `json:"publish_timestamp"`
-	SearchDateFrom   string   `json:"searchDatefrom"`
-	SearchDateUntil  string   `json:"searchDateuntil"`
+	Page             int      `json:"page,omitempty"`
+	Limit            int      `json:"limit,omitempty"`
+	Sort             string   `json:"sort,omitempty"`
+	Direction        string   `json:"direction,omitempty"`
+	Minimal          bool     `json:"minimal,omitempty"`
+	Attribute        string   `json:"attribute,omitempty"`
+	EventID          string   `json:"eventid,omitempty"`
+	DateFrom         string   `json:"datefrom,omitempty"`
+	DateUntil        string   `json:"dateuntil,omitempty"`
+	Org              string   `json:"org,omitempty"`
+	EventInfo        string   `json:"eventinfo,omitempty"`
+	Tag              string   `json:"tag,omitempty"`
+	Tags             []string `json:"tags,omitempty"`
+	Distribution     string   `json:"distribution,omitempty"`
+	SharingGroup     string   `json:"sharinggroup,omitempty"`
+	Analysis         string   `json:"analysis,omitempty"`
+	ThreatLevel      string   `json:"threatlevel,omitempty"`
+	Email            string   `json:"email,omitempty"`
+	HasProposal      string   `json:"hasproposal,omitempty"`
+	Timestamp        string   `json:"timestamp,omitempty"`
+	PublishTimestamp string   `json:"publish_timestamp,omitempty"`
+	SearchDateFrom   string   `json:"searchDatefrom,omitempty"`
+	SearchDateUntil  string   `json:"searchDateuntil,omitempty"`
 }
 
 type SearchEventsResult struct {
@@ -144,7 +144,7 @@ func (client *Client) SearchAttributes(search *Search) (attributes SearchAttribu
 
 // Search event metadata shown on the event index page
 func (client *Client) SearchIndex(search *IndexSearch) (result []Event, err error) {
-	res, err := client.Post("/events/index", search)
+	res, err := client.Post("/events/index", *search)
 	if err != nil {
 		return
 	}
