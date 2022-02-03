@@ -121,13 +121,18 @@ func (client *Client) EventExists(id string) (bool, error) {
 func (client *Client) AddEvent(event Event, metadata bool) (Event, error) {
 	var (
 		path   string = "/events/add"
+		data   map[string]interface{}
 		result map[string]Event
 	)
 
 	if metadata {
 		path = path + "/metadata:1"
 	}
-	res, err := client.Post(path, event)
+
+	data, _ = ToMap(event)
+	delete(data, "published")
+
+	res, err := client.Post(path, data)
 	if err != nil {
 		return Event{}, err
 	}
