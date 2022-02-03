@@ -169,3 +169,14 @@ type Feed struct {
 	OrgcID          string `json:"orgc_id"`
 	CacheTimestamp  string `json:"cache_timestamp"`
 }
+
+func ToMap(src interface{}) (r map[string]interface{}, err error) {
+	b, err := json.Marshal(src)
+	if err != nil {
+		return
+	}
+	if err = json.Unmarshal(b, &r); err != nil {
+		return
+	}
+	return
+}
