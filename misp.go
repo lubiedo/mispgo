@@ -220,8 +220,8 @@ func (client *Client) Do(method, path string, req interface{}) (*http.Response, 
 	httpReq.Header = make(http.Header)
 	httpReq.Header.Set("Authorization", client.APIKey)
 	httpReq.Header.Set("Content-Type", "application/json")
-	if dataLen > 0 {
-		httpReq.Header.Set("Content-Length", strconv.Itoa(dataLen))
+	if dataLen > 0 && method == "POST" {
+		httpReq.ContentLength = int64(dataLen)
 	}
 	httpReq.Header.Set("Accept", "application/json")
 

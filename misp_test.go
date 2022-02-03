@@ -35,6 +35,10 @@ func setup() {
 func testMethod(t *testing.T, r *http.Request, want string) {
 	if got := r.Method; got != want {
 		t.Errorf("Request method: %v, want %v", got, want)
+		return
+	}
+	if want == "POST" && r.Header.Get("Content-Length") == "" {
+		t.Errorf("Request header: Content-Length not present")
 	}
 }
 
@@ -304,13 +308,9 @@ func Test_AddEvent(t *testing.T) {
 		})
 
 	event := NewEvent()
-	event2, err := client.AddEvent(event, false)
+	_, err := client.AddEvent(event, false)
 	if err != nil {
 		t.Errorf("AddEvent() failed: %v", err)
-	}
-
-	if !reflect.DeepEqual(event, event2) {
-		t.Errorf("UploadSample returned %+v, want %+v", event2, event)
 	}
 }
 
